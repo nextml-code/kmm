@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "kmm"
+version = "0.0.0"
+description = "Minimalistic library for reading files in the kmm/kmm2 file format"
+authors = ["Aiwizo AB"]
+license = "Apache 2.0"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+numpy = "^1.21.2"
+pydantic = "^1.8.2"
+pandas = "^1.3.2"
+
+[tool.poetry.dev-dependencies]
+tqdm = "^4.62.2"
+pytest = "^6.2.5"
+flake8 = "^3.9.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
