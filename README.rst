@@ -1,5 +1,5 @@
 ==========
-kw6 reader
+kmm reader
 ==========
 
 Minimalistic library for reading files in the kmm/kmm2 file format. 

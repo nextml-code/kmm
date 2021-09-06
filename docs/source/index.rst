@@ -1,7 +1,7 @@
-Welcome to kw6's documentation!
+Welcome to kmm's documentation!
 ===============================
 
-Minimalistic library for reading files in the kw6 file format.
+Minimalistic library for reading files in the kmm file format.
 
 Install
 =======
