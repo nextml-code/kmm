@@ -22,7 +22,7 @@ def read(path: Path, header_path: Path = None):
 
 
 def test_empty_kmm():
-    df = read("tests/emptyB.kmm")
+    df = read("tests/empty.kmm")
     assert len(df) == 0
 
 
