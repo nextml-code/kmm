@@ -8,6 +8,23 @@ from kmm.kmm2 import kmm2
 
 @validate_arguments
 def read(path: Path, header_path: Path = None):
+    """
+    Used to load a kmm or kmm2 file as a pandas DataFrame.
+
+    Example:
+
+    .. code-block:: python
+
+        from pathlib import Path
+        import kmm
+
+        path = Path("...")
+        header_path = Path("...")
+
+        df = kmm.read(path, header_path)
+
+    """
+
     if path.suffix == ".kmm":
         df = kmm(path)
     elif path.suffix == ".kmm2":
