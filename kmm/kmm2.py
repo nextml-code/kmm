@@ -2,12 +2,14 @@ import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from pydantic import validate_arguments
 
 
 pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
 
 
+@validate_arguments
 def kmm2(path: Path):
 
     skiprows = [
