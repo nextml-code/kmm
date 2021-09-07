@@ -8,6 +8,18 @@ from pydantic import validate_arguments
 @validate_arguments(config=dict(arbitrary_types_allowed=True))
 def sync_frame_index(positions: pd.DataFrame, header_path: Path):
 
+    try:
+        position, sync = parse_sync_from_xml(header_path)
+    except ElementTree.ParseError:
+        position, sync = parse_sync_from_regex(header_path)
+
+    return positions.assign(
+        frame_index=(positions["centimeter"] + position - sync) / 10
+    )
+
+
+def parse_sync_from_xml(header_path):
+
     tree = ElementTree.parse(header_path)
     root = tree.getroot()
     sync_tags = [
@@ -31,9 +43,29 @@ def sync_frame_index(positions: pd.DataFrame, header_path: Path):
         sync_tag,
     ).group(1))
 
-    return positions.assign(
-        frame_index=(positions["centimeter"] + position - sync) / 10
-    )
+    return position, sync
+
+
+def parse_sync_from_regex(header_path):
+    header = header_path.read_text()
+
+    sync_tag = re.search(
+        r"<Sync>(.*)</Sync>",
+        header,
+        re.DOTALL,
+    ).group(1)
+
+    position = int(re.search(
+        r"Position = \"(\d*)\"",
+        sync_tag,
+    ).group(1))
+
+    sync = int(re.search(
+        r"Sync = \"(\d*)\"",
+        sync_tag,
+    ).group(1))
+
+    return position, sync
 
 
 def test_sync_frame_index():
