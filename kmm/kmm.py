@@ -18,8 +18,8 @@ def kmm(path: Path):
             "3?",
             "4?",
             "5?",
-            "sweref99_tm_x",
-            "sweref99_tm_y",
+            "x_sweref",
+            "y_sweref",
             "8?",
             "9?"
         ],
