@@ -6,16 +6,16 @@ tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
 
 def geodetic(positions: pd.DataFrame):
-    yx = positions.apply(
-        lambda row: (tm.grid_to_geodetic(row["x_sweref"], row["y_sweref"])),
-        axis="columns",
-        result_type="reduce",
-    )
-    return (
-        positions
-        .assign(longitude=yx.map(lambda yx: yx[1]))
-        .assign(latitude=yx.map(lambda yx: yx[0]))
-    )
+    if len(positions) == 0:
+        positions = positions.assign(longitude=[], latitude=[])
+    else:
+        latitude, longitude = zip(*positions.apply(
+            lambda row: (tm.grid_to_geodetic(row["sweref99_tm_x"], row["sweref99_tm_y"])),
+            axis="columns",
+            result_type="reduce",
+        ))
+        positions = positions.assign(longitude=longitude, latitude=latitude)
+    return positions
 
 
 def test_geodetic():
