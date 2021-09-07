@@ -40,6 +40,16 @@ def read(path: Path, header_path: Path):
     return df
 
 
+def test_read_kmm():
+    df = read("tests/ascending_B.kmm", "tests/ascending_B.hdr")
+    assert len(df) > 0
+
+
+def test_read_kmm2():
+    df = read("tests/ascending_B.kmm2", "tests/ascending_B.hdr")
+    assert len(df) > 0
+
+
 def test_empty_kmm():
     df = read("tests/empty.kmm", "tests/empty.hdr")
     assert len(df) == 0
@@ -48,15 +58,3 @@ def test_empty_kmm():
 def test_empty_kmm2():
     df = read("tests/empty.kmm2", "tests/empty.hdr")
     assert len(df) == 0
-
-
-def test_camera_positions_kmm():
-    df = kmm("tests/ascending_B.kmm")
-    df_calibrated = read("tests/ascending_B.kmm", "tests/ascending_B.hdr")
-    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
-
-
-def test_camera_positions_kmm2():
-    df = kmm2("tests/ascending_B.kmm2")
-    df_calibrated = read("tests/ascending_B.kmm2", "tests/ascending_B.hdr")
-    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
