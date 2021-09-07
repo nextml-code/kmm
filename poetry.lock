@@ -200,6 +200,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "sweref99"
+version = "0.2"
+description = "A SWEREF 99 map projection library"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -234,7 +242,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "1c828201f8c4e401b5f38eb17f489be2efb0ac19da3d10b26c0291c53456e1bc"
+content-hash = "0b5271eef549bdca427293e201ee575939a08482e6dd496ffc1b20bdfe4762a7"
 
 [metadata.files]
 atomicwrites = [
@@ -377,6 +385,10 @@ pytz = [
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
+]
+sweref99 = [
+    {file = "sweref99-0.2-py3-none-any.whl", hash = "sha256:a7feae82f8989b51205af0a705a4f7460aaad3e15869e18632e085ad5b668558"},
+    {file = "sweref99-0.2.tar.gz", hash = "sha256:d007b7e7d7c48e9bf871963674309bd64bd9af80e48f62b46cc68d7b1b4cb513"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
