@@ -34,10 +34,8 @@ def read(path: Path, header_path: Path):
     else:
         raise ValueError(f"Unable to parse file type {path.suffix}")
 
-    if header_path is not None:
-        df = camera_positions(df, header_path)
-        df = sync_frame_index(df, header_path)
-
+    df = camera_positions(df, header_path)
+    df = sync_frame_index(df, header_path)
     df = geodetic(df)
 
     return df
