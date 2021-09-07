@@ -1,14 +1,17 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from pydantic import validate_arguments
 
 
+@validate_arguments
 def kmm(path: Path):
     return pd.read_csv(
         path,
         sep="\t",
         encoding="latin1",
         names=[
+            "centimeter",
             "track_section",
             "kilometer",
             "meter",
@@ -21,7 +24,7 @@ def kmm(path: Path):
             "x_sweref",
             "y_sweref",
             "8?",
-            "9?"
+            "9?",
         ],
         dtype=dict(
             track_section=str,
