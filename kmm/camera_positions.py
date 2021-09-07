@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 import pandas as pd
+from xml.etree import ElementTree
 from pydantic import validate_arguments
 
 
@@ -38,10 +39,28 @@ def kmm_ascending(positions):
 
 
 def car_direction(header_path: Path):
-    return re.search(
+
+    tree = ElementTree.parse(header_path)
+    root = tree.getroot()
+    start_tags = [
+        child.text
+        for child in root
+        if child.tag == "Start"
+    ]
+
+    if len(start_tags) != 1:
+        raise ValueError(f"Expected 1 'Start' tag in header file, found {len(start_tags)}")
+
+    start_tag = start_tags[0]
+    car_direction = re.search(
         r"CarDirection = \"(.*)\"",
-        header_path.read_text(),
+        start_tag,
     ).group(1)
+
+    if car_direction not in ["A", "B"]:
+        raise ValueError(f"Unkown car direction {car_direction}")
+
+    return car_direction
 
 
 def test_camera_positions_kmm():
