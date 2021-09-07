@@ -1,8 +1,10 @@
 import re
 from pathlib import Path
 import pandas as pd
+from pydantic import validate_arguments
 
 
+@validate_arguments(config=dict(arbitrary_types_allowed=True))
 def camera_positions(positions: pd.DataFrame, header_path: Path):
     ascending = kmm_ascending(positions)
     direction = car_direction(header_path)
@@ -40,3 +42,19 @@ def car_direction(header_path: Path):
         r"CarDirection = \"(.*)\"",
         header_path.read_text(),
     ).group(1)
+
+
+def test_camera_positions_kmm():
+    from kmm.kmm import kmm
+
+    df = kmm("tests/ascending_B.kmm")
+    df_calibrated = camera_positions(df, "tests/ascending_B.hdr")
+    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
+
+
+def test_camera_positions_kmm2():
+    from kmm.kmm2 import kmm2
+
+    df = kmm2("tests/ascending_B.kmm2")
+    df_calibrated = camera_positions(df, "tests/ascending_B.hdr")
+    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
