@@ -7,7 +7,7 @@ from kmm.kmm2 import kmm2
 
 
 @validate_arguments
-def read(path: Path, header_path: Path = None):
+def read(path: Path, header_path: Path):
     """
     Used to load a kmm or kmm2 file as a pandas DataFrame.
 
