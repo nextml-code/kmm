@@ -5,7 +5,7 @@ from pydantic import validate_arguments
 
 
 @validate_arguments
-def kmm(path: Path):
+def read_kmm(path: Path):
     return pd.read_csv(
         path,
         sep="\t",

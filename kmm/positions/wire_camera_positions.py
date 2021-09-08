@@ -1,12 +1,12 @@
-import pandas as pd
 from pydantic import validate_arguments
 
 from kmm import CarDirection
+from kmm.positions.positions import Positions
 
 
 @validate_arguments(config=dict(arbitrary_types_allowed=True))
-def wire_camera_positions(positions: pd.DataFrame, direction: CarDirection):
-    ascending = kmm_ascending(positions)
+def wire_camera_positions(positions: Positions, direction: CarDirection):
+    ascending = kmm_ascending(positions.dataframe)
 
     if (
         (direction == CarDirection.A and ascending)
@@ -23,14 +23,16 @@ def wire_camera_positions(positions: pd.DataFrame, direction: CarDirection):
     else:
         raise ValueError
 
-    return (
-        positions
-        .assign(meter=lambda df: df["meter"] + correction)
+    return positions.replace(
+        dataframe=(
+            positions.dataframe
+            .assign(meter=lambda df: df["meter"] + correction)
+        )
     )
 
 
-def kmm_ascending(positions):
-    total_meter = positions["kilometer"] * 1000 + positions["meter"]
+def kmm_ascending(dataframe):
+    total_meter = dataframe["kilometer"] * 1000 + dataframe["meter"]
     diff = total_meter.values[:-1] - total_meter.values[1:]
     descending = (diff < 0).mean()
     ascending = (diff > 0).mean()
@@ -43,18 +45,24 @@ def kmm_ascending(positions):
 
 
 def test_camera_positions_kmm():
-    import kmm
+    from kmm import Header
 
-    df = kmm.positions.kmm("tests/ascending_B.kmm")
-    header = kmm.Header.from_path("tests/ascending_B.hdr")
-    df_calibrated = wire_camera_positions(df, header.car_direction)
-    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
+    positions = Positions.from_path("tests/ascending_B.kmm")
+    header = Header.from_path("tests/ascending_B.hdr")
+    positions_calibrated = wire_camera_positions(positions, header.car_direction)
+    assert (
+        positions_calibrated.dataframe["meter"].iloc[0]
+        == positions.dataframe["meter"].iloc[0] - 8
+    )
 
 
 def test_camera_positions_kmm2():
-    import kmm
+    from kmm import Header
 
-    df = kmm.positions.kmm2("tests/ascending_B.kmm2")
-    header = kmm.Header.from_path("tests/ascending_B.hdr")
-    df_calibrated = wire_camera_positions(df, header.car_direction)
-    assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
+    positions = Positions.from_path("tests/ascending_B.kmm2")
+    header = Header.from_path("tests/ascending_B.hdr")
+    positions_calibrated = wire_camera_positions(positions, header.car_direction)
+    assert (
+        positions_calibrated.dataframe["meter"].iloc[0]
+        == positions.dataframe["meter"].iloc[0] - 8
+    )

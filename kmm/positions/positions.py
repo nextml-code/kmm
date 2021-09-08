@@ -18,7 +18,14 @@ class Positions(kmm.FunctionalBase):
         """
         Loads positions from .kmm or .kmm2 file.
         """
-        return Positions(dataframe=kmm.positions.read_raw(path))
+        if path.suffix == ".kmm":
+            dataframe = kmm.positions.read_kmm(path)
+        elif path.suffix == ".kmm2":
+            dataframe = kmm.positions.read_kmm2(path)
+        else:
+            raise ValueError(f"Unable to parse file type {path.suffix}")
+
+        return Positions(dataframe=dataframe)
 
     @staticmethod
     @validate_arguments
@@ -30,7 +37,6 @@ class Positions(kmm.FunctionalBase):
         """
         Loads positions from .kmm or .kmm2 file + .hdr file, then performs
         frame index sync, position adjustment and geodetic coordinate transformation.
-        .
         """
         header = kmm.Header.from_path(header_path)
         return (
@@ -55,13 +61,12 @@ class Positions(kmm.FunctionalBase):
 
     def adjust(self, adjustment: kmm.PositionAdjustment, header):
         if adjustment == kmm.PositionAdjustment.WIRE_CAMERA:
-            dataframe = kmm.positions.wire_camera_positions(self.dataframe, header.car_direction)
+            return kmm.positions.wire_camera_positions(self, header.car_direction)
         else:
             raise ValueError(f"Unknown adjustment option {adjustment}")
-        return self.replace(dataframe=dataframe)
 
     def geodetic(self):
-        return self.replace(dataframe=kmm.positions.geodetic(self.dataframe))
+        return kmm.positions.geodetic(self)
 
 
 def test_read_kmm():
