@@ -19,7 +19,7 @@ def geodetic(positions: pd.DataFrame):
 
 
 def test_geodetic():
-    from kmm.kmm2 import kmm2
+    from kmm.positions.kmm2 import kmm2
 
     df = kmm2("tests/ascending_B.kmm2")
     df = geodetic(df)

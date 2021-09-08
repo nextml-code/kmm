@@ -18,7 +18,7 @@ class Positions(kmm.FunctionalBase):
         """
         Loads positions from .kmm or .kmm2 file.
         """
-        return Positions(dataframe=kmm.read_raw(path))
+        return Positions(dataframe=kmm.positions.read_raw(path))
 
     @staticmethod
     @validate_arguments
@@ -55,13 +55,13 @@ class Positions(kmm.FunctionalBase):
 
     def adjust(self, adjustment: kmm.PositionAdjustment, header):
         if adjustment == kmm.PositionAdjustment.WIRE_CAMERA:
-            dataframe = kmm.wire_camera_positions(self.dataframe, header.car_direction)
+            dataframe = kmm.positions.wire_camera_positions(self.dataframe, header.car_direction)
         else:
             raise ValueError(f"Unknown adjustment option {adjustment}")
         return self.replace(dataframe=dataframe)
 
     def geodetic(self):
-        return self.replace(dataframe=kmm.geodetic(self.dataframe))
+        return self.replace(dataframe=kmm.positions.geodetic(self.dataframe))
 
 
 def test_read_kmm():
