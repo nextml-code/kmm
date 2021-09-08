@@ -15,4 +15,13 @@ Usage
     kmm_path = Path("...")
     header_path = Path("...")
 
-    positions = kmm.Positions.from_paths(kmm_path, header_path)
+    header = Header.from_path(header_path)
+    positions = (
+        kmm.Positions.from_path(kmm_path)
+        .sync_frame_index(header)
+        .adjust(kmm.ADJUST_WIRE_CAMERA, header)
+        .geodetic()
+    )
+
+    # or, equivalently
+    positions = kmm.Positions.read_sync_adjust(kmm_path, header_path)
