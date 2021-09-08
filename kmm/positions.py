@@ -25,7 +25,7 @@ class Positions(kmm.FunctionalBase):
     def read_sync_adjust(
         kmm_path: Path,
         header_path: Path,
-        adjustment: int = kmm.ADJUST_WIRE_CAMERA,
+        adjustment: kmm.PositionAdjustment = kmm.PositionAdjustment.WIRE_CAMERA,
     ):
         """
         Loads positions from .kmm or .kmm2 file + .hdr file, then performs
@@ -53,8 +53,8 @@ class Positions(kmm.FunctionalBase):
             )
         )
 
-    def adjust(self, adjustment: int, header):
-        if adjustment == kmm.ADJUST_WIRE_CAMERA:
+    def adjust(self, adjustment: kmm.PositionAdjustment, header):
+        if adjustment == kmm.PositionAdjustment.WIRE_CAMERA:
             dataframe = kmm.wire_camera_positions(self.dataframe, header.car_direction)
         else:
             raise ValueError(f"Unknown adjustment option {adjustment}")
