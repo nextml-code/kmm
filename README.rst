@@ -12,7 +12,7 @@ Usage
     from pathlib import Path
     import kmm
 
-    path = Path("...")
+    kmm_path = Path("...")
     header_path = Path("...")
 
-    df = kmm.read(path, header_path)
+    positions = kmm.Positions.from_paths(kmm_path, header_path)
