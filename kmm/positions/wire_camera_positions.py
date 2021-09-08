@@ -43,18 +43,18 @@ def kmm_ascending(positions):
 
 
 def test_camera_positions_kmm():
-    from kmm import kmm, Header
+    import kmm
 
-    df = kmm("tests/ascending_B.kmm")
-    header = Header.from_path("tests/ascending_B.hdr")
+    df = kmm.positions.kmm("tests/ascending_B.kmm")
+    header = kmm.Header.from_path("tests/ascending_B.hdr")
     df_calibrated = wire_camera_positions(df, header.car_direction)
     assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8
 
 
 def test_camera_positions_kmm2():
-    from kmm import kmm2, Header
+    import kmm
 
-    df = kmm2("tests/ascending_B.kmm2")
-    header = Header.from_path("tests/ascending_B.hdr")
+    df = kmm.positions.kmm2("tests/ascending_B.kmm2")
+    header = kmm.Header.from_path("tests/ascending_B.hdr")
     df_calibrated = wire_camera_positions(df, header.car_direction)
     assert df_calibrated["meter"].iloc[0] == df["meter"].iloc[0] - 8

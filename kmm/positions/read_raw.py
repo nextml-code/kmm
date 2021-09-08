@@ -1,7 +1,7 @@
 from pathlib import Path
 from pydantic import validate_arguments
 
-import kmm
+from kmm.positions import kmm, kmm2
 
 
 @validate_arguments
@@ -17,13 +17,13 @@ def read_raw(path: Path):
         import kmm
 
         path = Path("...")
-        df = kmm.read(path)
+        df = kmm.positions.read_raw(path)
 
     """
     if path.suffix == ".kmm":
-        df = kmm.kmm(path)
+        df = kmm(path)
     elif path.suffix == ".kmm2":
-        df = kmm.kmm2(path)
+        df = kmm2(path)
     else:
         raise ValueError(f"Unable to parse file type {path.suffix}")
 
