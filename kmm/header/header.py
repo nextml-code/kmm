@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from xml.etree import ElementTree
 from pydantic import validate_arguments
