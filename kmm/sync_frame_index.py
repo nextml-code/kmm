@@ -32,7 +32,7 @@ def sync_frame_index(positions: pd.DataFrame, header_path: Path):
     ).group(1))
 
     return positions.assign(
-        frame_index=(positions["centimeter"] + position - sync) / 10
+        frame_index=((positions["centimeter"] + position - sync) / 10).astype(int)
     )
 
 
