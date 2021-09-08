@@ -10,7 +10,7 @@ pattern2 = re.compile(r"CMAST")
 
 
 @validate_arguments
-def kmm2(path: Path):
+def read_kmm2(path: Path):
 
     skiprows = [
         index

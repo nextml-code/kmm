@@ -1,27 +1,28 @@
-import pandas as pd
 from sweref99 import projections
+
+from kmm.positions.positions import Positions
 
 
 tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
 
-def geodetic(positions: pd.DataFrame):
-    if len(positions) == 0:
-        positions = positions.assign(longitude=[], latitude=[])
+def geodetic(positions: Positions):
+    dataframe = positions.dataframe
+    if len(dataframe) == 0:
+        dataframe = dataframe.assign(longitude=[], latitude=[])
     else:
-        latitude, longitude = zip(*positions.apply(
+        latitude, longitude = zip(*dataframe.apply(
             lambda row: (tm.grid_to_geodetic(row["sweref99_tm_x"], row["sweref99_tm_y"])),
             axis="columns",
             result_type="reduce",
         ))
-        positions = positions.assign(longitude=longitude, latitude=latitude)
-    return positions
+        dataframe = dataframe.assign(longitude=longitude, latitude=latitude)
+    return positions.replace(dataframe=dataframe)
 
 
 def test_geodetic():
-    from kmm.positions.kmm2 import kmm2
 
-    df = kmm2("tests/ascending_B.kmm2")
-    df = geodetic(df)
+    positions = Positions.from_path("tests/ascending_B.kmm2")
+    df = geodetic(positions).dataframe
     assert ((df["latitude"] < 68) & (df["latitude"] > 55)).all()
     assert ((df["longitude"] < 25) & (df["longitude"] > 7)).all()
