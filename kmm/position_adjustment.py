@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class PositionAdjustment(Enum):
-    MEASURING_INSTRUMENT = 0
-    WIRE_CAMERA = 1
+class PositionAdjustment(str, Enum):
+    MEASURING_INSTRUMENT = 'measuring_instrument'
+    WIRE_CAMERA = 'wire_camera'
