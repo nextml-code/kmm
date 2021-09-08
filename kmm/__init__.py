@@ -1,7 +1,6 @@
-ADJUST_WIRE_CAMERA = 1
-
 from kmm.functional_base import FunctionalBase
 from kmm.car_direction import CarDirection
+from kmm.position_adjustment import PositionAdjustment
 from kmm.kmm import kmm
 from kmm.kmm2 import kmm2
 from kmm.read_raw import read_raw
