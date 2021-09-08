@@ -19,7 +19,7 @@ Usage
     positions = (
         kmm.Positions.from_path(kmm_path)
         .sync_frame_index(header)
-        .adjust(kmm.ADJUST_WIRE_CAMERA, header)
+        .adjust(kmm.PositionAdjustment.WIRE_CAMERA, header)
         .geodetic()
     )
 
