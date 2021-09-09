@@ -1,3 +1,4 @@
+import numpy as np
 from pydantic import validate_arguments
 
 from kmm import CarDirection
@@ -5,43 +6,49 @@ from kmm.positions.positions import Positions
 
 
 @validate_arguments(config=dict(arbitrary_types_allowed=True))
-def wire_camera_positions(positions: Positions, direction: CarDirection):
-    ascending = kmm_ascending(positions.dataframe)
+def wire_camera_positions(positions: Positions, car_direction: CarDirection):
 
-    if (
-        (direction == CarDirection.A and ascending)
-        or (direction == CarDirection.B and not ascending)
-    ):
-        correction = -8
-
-    elif (
-        (direction == CarDirection.A and not ascending)
-        or (direction == CarDirection.B and ascending)
-    ):
-        correction = 8
-
+    if car_direction == CarDirection.A:
+        corrections = kmm_directions(positions.dataframe) * -8
+    elif car_direction == CarDirection.B:
+        corrections = kmm_directions(positions.dataframe) * 8
     else:
-        raise ValueError
+        raise ValueError(car_direction)
 
     return positions.replace(
         dataframe=(
             positions.dataframe
-            .assign(meter=lambda df: df["meter"] + correction)
+            .assign(meter=lambda df: df["meter"] + corrections)
         )
     )
 
 
-def kmm_ascending(dataframe):
-    total_meter = dataframe["kilometer"] * 1000 + dataframe["meter"]
-    diff = total_meter.values[:-1] - total_meter.values[1:]
-    descending = (diff < 0).mean()
-    ascending = (diff > 0).mean()
+def kmm_directions(df):
 
-    if descending < 0.9 and ascending < 0.9:
-        raise ValueError("Unable to determine ascending/descending kmm numbers")
+    total_meter = (df["kilometer"] * 1000 + df["meter"]).values
 
-    else:
-        return ascending > 0.9
+    track_section_changes = np.argwhere(np.concatenate([
+        np.array([True]),
+        df["track_section"].values[1:] != df["track_section"].values[:-1],
+    ])).squeeze(1).tolist() + [len(df)]
+
+    return np.concatenate([
+        (
+            np.ones(to_index - from_index, dtype=np.uint8)
+            * kmm_direction(total_meter[from_index: to_index])
+        )
+        for from_index, to_index in zip(
+            track_section_changes[:-1],
+            track_section_changes[1:],
+        )
+    ])
+
+
+def kmm_direction(total_meter):
+    diffs = np.clip(total_meter[1:] - total_meter[:-1], -1, 1)
+    if len(diffs) >= 10 and (diffs > 0).mean() < 0.9 and (diffs < 0).mean() < 0.9:
+        raise ValueError("Unable to determine direction of kmm numbers.", diffs)
+    return int(np.sign(diffs.sum()))
 
 
 def test_camera_positions_kmm():
@@ -52,7 +59,7 @@ def test_camera_positions_kmm():
     positions_calibrated = wire_camera_positions(positions, header.car_direction)
     assert (
         positions_calibrated.dataframe["meter"].iloc[0]
-        == positions.dataframe["meter"].iloc[0] - 8
+        == positions.dataframe["meter"].iloc[0] + 8
     )
 
 
@@ -64,5 +71,5 @@ def test_camera_positions_kmm2():
     positions_calibrated = wire_camera_positions(positions, header.car_direction)
     assert (
         positions_calibrated.dataframe["meter"].iloc[0]
-        == positions.dataframe["meter"].iloc[0] - 8
+        == positions.dataframe["meter"].iloc[0] + 8
     )
