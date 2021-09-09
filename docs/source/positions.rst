@@ -1,7 +1,7 @@
 
-read
+Positions
 ======
 
-.. autofunction:: kmm.read
+.. autoclass:: kmm.Positions
    :members:
    :member-order: bysource

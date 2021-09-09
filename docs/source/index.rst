@@ -18,17 +18,18 @@ Usage
     from pathlib import Path
     import kmm
 
-    path = Path("...")
+    kmm_path = Path("...")
     header_path = Path("...")
 
-    df = kmm.read(path, header_path)
+    positions = kmm.Positions.read_sync_adjust(kmm_path, header_path)
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   read
+   positions
+   header
 
 Indices and tables
 ==================
