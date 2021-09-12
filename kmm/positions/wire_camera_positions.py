@@ -1,5 +1,6 @@
 import numpy as np
 from pydantic import validate_arguments
+import pandas as pd
 
 from kmm import CarDirection
 from kmm.positions.positions import Positions
@@ -24,31 +25,27 @@ def wire_camera_positions(positions: Positions, car_direction: CarDirection):
 
 
 def kmm_directions(df):
-
-    total_meter = (df["kilometer"] * 1000 + df["meter"]).values
-
-    track_section_changes = np.argwhere(np.concatenate([
-        np.array([True]),
-        df["track_section"].values[1:] != df["track_section"].values[:-1],
-    ])).squeeze(1).tolist() + [len(df)]
-
-    return np.concatenate([
-        (
-            np.ones(to_index - from_index, dtype=np.uint8)
-            * kmm_direction(total_meter[from_index: to_index])
-        )
-        for from_index, to_index in zip(
-            track_section_changes[:-1],
-            track_section_changes[1:],
-        )
-    ])
-
-
-def kmm_direction(total_meter):
-    diffs = np.clip(total_meter[1:] - total_meter[:-1], -1, 1)
-    if len(diffs) >= 10 and (diffs > 0).mean() < 0.9 and (diffs < 0).mean() < 0.9:
-        raise ValueError("Unable to determine direction of kmm numbers.", diffs)
-    return int(np.sign(diffs.sum()))
+    records = list()
+    for (track_section, kilometer), group in df.groupby(["track_section", "kilometer"]):
+        diffs = np.sign(group["meter"].values[1:] - group["meter"].values[:-1])
+        diffs = diffs[diffs != 0]
+        if len(diffs) >= 10 and (diffs > 0).mean() < 0.9 and (diffs < 0).mean() < 0.9:
+            raise ValueError(
+                f"Inconsistent directions at track_section {track_section}, kilometer {kilometer}."
+            )
+        records.append(dict(
+            track_section=track_section,
+            kilometer=kilometer,
+            direction=int(np.sign(diffs.sum())),
+        ))
+    return df.merge(
+        pd.DataFrame.from_records(
+            records,
+            columns=["track_section", "kilometer", "direction"],
+        ),
+        on=["track_section", "kilometer"],
+        how="left",
+    )["direction"].values
 
 
 def test_camera_positions_kmm():
