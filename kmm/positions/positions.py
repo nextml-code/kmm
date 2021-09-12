@@ -32,7 +32,6 @@ class Positions(kmm.FunctionalBase):
     def read_sync_adjust(
         kmm_path: Path,
         header_path: Path,
-        adjustment: kmm.PositionAdjustment = kmm.PositionAdjustment.WIRE_CAMERA,
     ):
         """
         Loads positions from .kmm or .kmm2 file + .hdr file, then performs
@@ -42,28 +41,11 @@ class Positions(kmm.FunctionalBase):
         return (
             Positions.from_path(kmm_path)
             .sync_frame_index(header)
-            .adjust(adjustment, header)
             .geodetic()
         )
 
     def sync_frame_index(self, header):
-        return self.replace(
-            dataframe=self.dataframe.assign(
-                frame_index=(
-                    (
-                        self.dataframe["centimeter"]
-                        + header.position
-                        - header.sync
-                    ) / 10
-                ).astype(int)
-            )
-        )
-
-    def adjust(self, adjustment: kmm.PositionAdjustment, header):
-        if adjustment == kmm.PositionAdjustment.WIRE_CAMERA:
-            return kmm.positions.wire_camera_positions(self, header.car_direction)
-        else:
-            raise ValueError(f"Unknown adjustment option {adjustment}")
+        return kmm.positions.sync_frame_index(self, header)
 
     def geodetic(self):
         return kmm.positions.geodetic(self)
