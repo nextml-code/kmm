@@ -11,11 +11,10 @@ def geodetic(positions: Positions):
     if len(dataframe) == 0:
         dataframe = dataframe.assign(longitude=[], latitude=[])
     else:
-        latitude, longitude = zip(*dataframe.apply(
-            lambda row: (tm.grid_to_geodetic(row["sweref99_tm_x"], row["sweref99_tm_y"])),
-            axis="columns",
-            result_type="reduce",
-        ))
+        latitude, longitude = zip(*[
+            tm.grid_to_geodetic(coordinate.sweref99_tm_x, coordinate.sweref99_tm_y)
+            for coordinate in dataframe[["sweref99_tm_x", "sweref99_tm_y"]].itertuples()
+        ])
         dataframe = dataframe.assign(longitude=longitude, latitude=latitude)
     return positions.replace(dataframe=dataframe)
 
