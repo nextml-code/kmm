@@ -1,13 +1,13 @@
 import numpy as np
 from pydantic import validate_arguments
 
-from kmm import CarDirection
+from kmm import CarDirection, PositionAdjustment
 from kmm.positions.positions import Positions
 from kmm.header.header import Header
 
 
 @validate_arguments(config=dict(arbitrary_types_allowed=True))
-def sync_frame_index(positions: Positions, header: Header):
+def sync_frame_index(positions: Positions, header: Header, adjustment: PositionAdjustment):
 
     validate_meter_increments(positions)
     frame_index = (
@@ -17,19 +17,23 @@ def sync_frame_index(positions: Positions, header: Header):
             - header.sync
         ) / 10
     ).astype(int)
-    pad = np.zeros(8)
-    pad.fill(np.nan)
 
     if header.car_direction == CarDirection.A:
-        frame_index = np.concatenate([pad, frame_index[8:]])
+        dataframe = (
+            positions.dataframe
+            .iloc[adjustment:]
+            .assign(frame_index=frame_index[adjustment:])
+        )
     elif header.car_direction == CarDirection.B:
-        frame_index = np.concatenate([frame_index[:-8], pad])
+        dataframe = (
+            positions.dataframe
+            .iloc[:-adjustment]
+            .assign(frame_index=frame_index[:-adjustment])
+        )
     else:
         raise ValueError(header.car_direction)
 
-    return positions.replace(
-        dataframe=positions.dataframe.assign(frame_index=frame_index)
-    )
+    return positions.replace(dataframe=dataframe)
 
 
 def validate_meter_increments(positions):
@@ -50,7 +54,7 @@ def test_sync_frame_index_kmm():
     positions = Positions.from_path("tests/ascending_B.kmm")
     header = Header.from_path("tests/ascending_B.hdr")
     assert (
-        sync_frame_index(positions, header)
+        sync_frame_index(positions, header, PositionAdjustment.WIRE_CAMERA)
         .dataframe["frame_index"].iloc[0] == 659
     )
 
@@ -61,6 +65,6 @@ def test_sync_frame_index_kmm2():
     positions = Positions.from_path("tests/ascending_B.kmm2")
     header = Header.from_path("tests/ascending_B.hdr")
     assert (
-        sync_frame_index(positions, header)
+        sync_frame_index(positions, header, PositionAdjustment.WIRE_CAMERA)
         .dataframe["frame_index"].iloc[0] == -808
     )
