@@ -21,13 +21,13 @@ def sync_frame_index(positions: Positions, header: Header, adjustment: PositionA
     if header.car_direction == CarDirection.A:
         dataframe = (
             positions.dataframe
-            .iloc[adjustment:]
+            .iloc[:-adjustment]
             .assign(frame_index=frame_index[adjustment:])
         )
     elif header.car_direction == CarDirection.B:
         dataframe = (
             positions.dataframe
-            .iloc[:-adjustment]
+            .iloc[adjustment:]
             .assign(frame_index=frame_index[:-adjustment])
         )
     else:
