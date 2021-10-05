@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Protokoll>
+<Start>
+Date = "2021-08-19"
+Time = "17:17:40"
+MeasuringSystem = "owlsbtlpos"
+Filename = "owlsbtlpos20210819_165120_2011TA"
+Position = "0"
+ProgramName = "OWLS4Meas"
+CompileVersion = "2.29"
+CompileDate = "200802"
+CarDirection = "A"
+EngineDirection = "-"
+Pantograph = "-"
+SystemName = "owlsbtlpos"
+CarType = "IMV200"
+trigIntervalCh1 = "10"
+trigIntervalCh2 = "0"
+trigIncrement = "10"
+pulsesPerTrigCh1 = "1"
+pulsesPerTrigCh2 = "0"
+</Start>
+<Sync>
+Date = "2021-08-19"
+Time = "17:18:06"
+MeasuringSystem = "owlsbtlpos"
+Filename = "owlsbtlpos20210819_165120_2011TA"
+Position = "24340"
+Sync = "351853981"
+Drift = "-10564990"
+</Sync>
+<End>
+Date = "2021-08-19"
+Time = "17:40:51"
+MeasuringSystem = "owlsbtlpos"
+Filename = "owlsbtlpos20210819_165120_2011TA"
+Position = "2305670"
+</End>
+</Protokoll>
