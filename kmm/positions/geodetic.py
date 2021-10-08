@@ -1,3 +1,4 @@
+import numpy as np
 from sweref99 import projections
 
 from kmm.positions.positions import Positions
@@ -25,3 +26,13 @@ def test_geodetic():
     df = geodetic(positions).dataframe
     assert ((df["latitude"] < 68) & (df["latitude"] > 55)).all()
     assert ((df["longitude"] < 25) & (df["longitude"] > 7)).all()
+
+
+def test_sweref_library():
+    lat, lon = 57.705918, 11.987286
+
+    northing, easting = tm.geodetic_to_grid(lat, lon)
+
+    lat2, lon2 = tm.grid_to_geodetic(northing, easting)
+
+    assert np.allclose([lat, lon], [lat2, lon2])
