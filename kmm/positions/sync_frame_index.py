@@ -33,7 +33,9 @@ def sync_frame_index(positions: Positions, header: Header, adjustment: PositionA
     else:
         raise ValueError(header.car_direction)
 
-    return positions.replace(dataframe=dataframe)
+    return positions.replace(
+        dataframe=dataframe.assign(car_direction=header.car_direction)
+    )
 
 
 def validate_meter_increments(positions):
