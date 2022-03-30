@@ -16,7 +16,11 @@ class Header(kmm.FunctionalBase):
         """
         Loads header data from .hdr file.
         """
-        tree = ElementTree.parse(path)
+        try:
+            tree = ElementTree.parse(path)
+        except ElementTree.ParseError as e:
+            raise ValueError("Unable to parse header file, invalid XML.") from e
+
         position, sync = kmm.header.position_sync(tree)
         return Header(
             position=position,
