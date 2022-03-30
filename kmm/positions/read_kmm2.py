@@ -18,45 +18,48 @@ def read_kmm2(path: Path):
         if pattern.match(line) or pattern2.match(line)
     ]
 
-    return pd.read_csv(
-        path,
-        skiprows=[0] + skiprows,
-        delimiter="\t",
-        encoding="latin1",
-        names=[
-            "code",
-            "centimeter",
-            "track_section",
-            "kilometer",
-            "meter",
-            "track_lane",
-            "1?",
-            "2?",
-            "3?",
-            "4?",
-            "sweref99_tm_x",
-            "sweref99_tm_y",
-            "contact_wire_material",
-            "rail_model",
-            "sliper_model",
-            "between_stations",
-            "5?",
-            "6?",
-            "7?",
-            "8?",
-            "max_speed",
-        ],
-        dtype=dict(
-            centimeter=np.int64,
-            track_section=str,
-            kilometer=np.int32,
-            meter=np.int32,
-            track_lane=str,
-            sweref99_tm_x=np.float32,
-            sweref99_tm_y=np.float32,
-        ),
-        low_memory=False,
-    )
+    try:
+        return pd.read_csv(
+            path,
+            skiprows=[0] + skiprows,
+            delimiter="\t",
+            encoding="latin1",
+            names=[
+                "code",
+                "centimeter",
+                "track_section",
+                "kilometer",
+                "meter",
+                "track_lane",
+                "1?",
+                "2?",
+                "3?",
+                "4?",
+                "sweref99_tm_x",
+                "sweref99_tm_y",
+                "contact_wire_material",
+                "rail_model",
+                "sliper_model",
+                "between_stations",
+                "5?",
+                "6?",
+                "7?",
+                "8?",
+                "max_speed",
+            ],
+            dtype=dict(
+                centimeter=np.int64,
+                track_section=str,
+                kilometer=np.int32,
+                meter=np.int32,
+                track_lane=str,
+                sweref99_tm_x=np.float32,
+                sweref99_tm_y=np.float32,
+            ),
+            low_memory=False,
+        )
+    except Exception as e:
+        raise ValueError("Unable to parse kmm2 file, invalid csv.") from e
 
 
 def test_patterns():

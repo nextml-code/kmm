@@ -20,7 +20,11 @@ def car_direction(tree: ElementTree):
     car_direction = re.search(
         r"CarDirection = \"(.*)\"",
         start_tag,
-    ).group(1)
+    )
+    if car_direction is None:
+        raise ValueError("""Did not find a "CarDirection" field under the Start tag.""")
+    else:
+        car_direction = car_direction.group(1)
 
     if not any(car_direction == item.value for item in kmm.CarDirection):
         raise ValueError(f"Unknown car direction {car_direction}")

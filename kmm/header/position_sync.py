@@ -12,18 +12,27 @@ def position_sync(tree: ElementTree):
     ]
 
     if len(sync_tags) == 0:
-        raise ValueError("Did not find a sync tag in header.")
+        raise ValueError("Did not find a Sync tag in header.")
 
     sync_tag = sync_tags[0]
 
-    position = int(re.search(
+    position = re.search(
         r"Position = \"(\d*)\"",
         sync_tag,
-    ).group(1))
+    )
+    if position is not None:
+        position = int(position.group(1))
+    else:
+        raise ValueError("""Did not find a "Position" field under the Sync tag.""")
 
-    sync = int(re.search(
+    sync = re.search(
         r"Sync = \"(\d*)\"",
         sync_tag,
-    ).group(1))
+    )
+
+    if sync is not None:
+        sync = int(sync.group(1))
+    else:
+        raise ValueError("""Did not find a "Sync" field under the Sync tag.""")
 
     return position, sync
