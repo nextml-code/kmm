@@ -1,13 +1,13 @@
-from kmm.header.header import Header
 from pathlib import Path
+
 import pandas as pd
 from pydantic import validate_arguments
 
 import kmm
+from kmm.header.header import Header
 
 
 class Positions(kmm.FunctionalBase):
-
     dataframe: pd.DataFrame
 
     class Config:
@@ -34,21 +34,29 @@ class Positions(kmm.FunctionalBase):
         kmm_path: Path,
         header_path: Path,
         adjustment: kmm.PositionAdjustment = kmm.PositionAdjustment.WIRE_CAMERA,
+        raise_on_malformed_data: bool = True,
     ):
         """
         Loads positions from .kmm or .kmm2 file + .hdr file, then performs
         frame index sync, position adjustment and geodetic coordinate transformation.
         """
-        header = kmm.Header.from_path(header_path)
+        header = kmm.Header.from_path(header_path, raise_on_malformed_data)
         return (
             Positions.from_path(kmm_path)
-            .sync_frame_index(header, adjustment)
+            .sync_frame_index(header, adjustment, raise_on_malformed_data)
             .geodetic()
         )
 
     @validate_arguments
-    def sync_frame_index(self, header: Header, adjustment: kmm.PositionAdjustment):
-        return kmm.positions.sync_frame_index(self, header, adjustment)
+    def sync_frame_index(
+        self,
+        header: Header,
+        adjustment: kmm.PositionAdjustment,
+        raise_on_malformed_data: bool = True,
+    ):
+        return kmm.positions.sync_frame_index(
+            self, header, adjustment, raise_on_malformed_data
+        )
 
     def geodetic(self):
         return kmm.positions.geodetic(self)
