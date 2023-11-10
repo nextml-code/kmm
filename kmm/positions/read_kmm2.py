@@ -19,8 +19,8 @@ expected_columns = [
     "2?",
     "3?",
     "4?",
-    "sweref99_tm_x",
-    "sweref99_tm_y",
+    "northing",
+    "easting",
     "contact_wire_material",
     "rail_model",
     "sliper_model",
@@ -40,14 +40,13 @@ expected_dtypes = dict(
     kilometer=np.int32,
     meter=np.int32,
     track_lane=str,
-    sweref99_tm_x=np.float32,
-    sweref99_tm_y=np.float32,
+    northing=np.float32,
+    easting=np.float32,
 )
 
 
 @validate_arguments
 def read_kmm2(path: Path):
-
     skiprows = [
         index
         for index, line in enumerate(path.read_text(encoding="latin1").splitlines())
