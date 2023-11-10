@@ -13,13 +13,15 @@ class Header(kmm.FunctionalBase):
 
     @staticmethod
     @validate_arguments
-    def from_path(path: Path):
+    def from_path(path: Path, raise_on_malformed_data: bool = True):
         """
         Loads header data from .hdr file.
         """
         try:
             tree = ElementTree.parse(path)
         except ElementTree.ParseError:
+            if raise_on_malformed_data:
+                raise ValueError("Unable to parse header file, invalid XML.")
             tree = attempt_to_patch_xml(path)
 
         position, sync = kmm.header.position_sync(tree)
