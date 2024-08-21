@@ -15,7 +15,7 @@ Usage
     kmm_path = Path("...")
     header_path = Path("...")
 
-    header = Header.from_path(header_path)
+    header = kmm.Header.from_path(header_path)
     positions = (
         kmm.Positions.from_path(kmm_path)
         .sync_frame_index(header)
