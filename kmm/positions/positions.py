@@ -15,14 +15,19 @@ class Positions(kmm.FunctionalBase):
 
     @staticmethod
     @validate_arguments
-    def from_path(path: Path):
+    def from_path(
+        path: Path,
+        raise_on_malformed_data: bool = True,
+    ):
         """
         Loads positions from .kmm or .kmm2 file.
         """
         if path.suffix == ".kmm":
             dataframe = kmm.positions.read_kmm(path)
         elif path.suffix == ".kmm2":
-            dataframe = kmm.positions.read_kmm2(path)
+            dataframe = kmm.positions.read_kmm2(
+                path, raise_on_malformed_data=raise_on_malformed_data
+            )
         else:
             raise ValueError(f"Unable to parse file type {path.suffix}")
 
@@ -42,7 +47,7 @@ class Positions(kmm.FunctionalBase):
         """
         header = kmm.Header.from_path(header_path, raise_on_malformed_data)
         return (
-            Positions.from_path(kmm_path)
+            Positions.from_path(kmm_path, raise_on_malformed_data)
             .sync_frame_index(header, adjustment, raise_on_malformed_data)
             .geodetic()
         )

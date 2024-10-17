@@ -46,21 +46,27 @@ expected_dtypes = dict(
 
 
 @validate_arguments
-def read_kmm2(path: Path):
+def read_kmm2(path: Path, raise_on_malformed_data: bool = True):
     skiprows = [
         index
         for index, line in enumerate(path.read_text(encoding="latin1").splitlines())
         if pattern.match(line) or pattern2.match(line)
     ]
-
+    with open(path, "r", encoding="latin1") as f:
+        line = f.readline()
+        if line.startswith("VER"):
+            skiprows = [0] + skiprows
+        elif raise_on_malformed_data and not line.startswith("POS"):
+            raise ValueError("Malformed data, first line is not POS or VER")
     try:
         try:
             df = pd.read_csv(
                 path,
-                skiprows=[0] + skiprows,
+                skiprows=skiprows,
                 delimiter="\t",
                 encoding="latin1",
                 low_memory=False,
+                header=None,
             )
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=expected_columns)
