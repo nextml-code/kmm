@@ -18,6 +18,7 @@ class Positions(kmm.FunctionalBase):
     def from_path(
         path: Path,
         raise_on_malformed_data: bool = True,
+        replace_commas: bool=True,
     ):
         """
         Loads positions from .kmm or .kmm2 file.
@@ -26,7 +27,7 @@ class Positions(kmm.FunctionalBase):
             dataframe = kmm.positions.read_kmm(path)
         elif path.suffix == ".kmm2":
             dataframe = kmm.positions.read_kmm2(
-                path, raise_on_malformed_data=raise_on_malformed_data
+                path, raise_on_malformed_data=raise_on_malformed_data, replace_commas=replace_commas
             )
         else:
             raise ValueError(f"Unable to parse file type {path.suffix}")
@@ -40,6 +41,7 @@ class Positions(kmm.FunctionalBase):
         header_path: Path,
         adjustment: kmm.PositionAdjustment = kmm.PositionAdjustment.WIRE_CAMERA,
         raise_on_malformed_data: bool = True,
+        replace_commas: bool=True,
     ):
         """
         Loads positions from .kmm or .kmm2 file + .hdr file, then performs
@@ -47,7 +49,7 @@ class Positions(kmm.FunctionalBase):
         """
         header = kmm.Header.from_path(header_path, raise_on_malformed_data)
         return (
-            Positions.from_path(kmm_path, raise_on_malformed_data)
+            Positions.from_path(kmm_path, raise_on_malformed_data=raise_on_malformed_data, replace_commas=replace_commas)
             .sync_frame_index(header, adjustment, raise_on_malformed_data)
             .geodetic()
         )
