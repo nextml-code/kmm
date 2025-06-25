@@ -7,7 +7,7 @@ from pydantic import validate_arguments
 
 
 @validate_arguments
-def read_kmm(path: Path, replace_commas: bool=True):
+def read_kmm(path: Path, replace_commas: bool = True):
     try:
         if replace_commas:
             with open(path, "r", encoding="latin1") as f:

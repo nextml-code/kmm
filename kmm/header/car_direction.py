@@ -7,11 +7,7 @@ import kmm
 def car_direction(tree: ElementTree):
 
     root = tree.getroot()
-    start_tags = [
-        child.text
-        for child in root
-        if child.tag == "Start"
-    ]
+    start_tags = [child.text for child in root if child.tag == "Start"]
 
     if len(start_tags) != 1:
         raise ValueError(f"Expected 1 'Start' tag in header, found {len(start_tags)}")
