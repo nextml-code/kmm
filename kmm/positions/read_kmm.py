@@ -1,3 +1,4 @@
+from io import StringIO
 from pathlib import Path
 
 import numpy as np
@@ -6,12 +7,19 @@ from pydantic import validate_arguments
 
 
 @validate_arguments
-def read_kmm(path: Path):
+def read_kmm(path: Path, replace_commas: bool=True):
     try:
+        if replace_commas:
+            with open(path, "r", encoding="latin1") as f:
+                content = f.read()
+            content = content.replace(",", ".")
+            file_obj = StringIO(content)
+        else:
+            file_obj = path
         return pd.read_csv(
-            path,
+            file_obj,
             sep="\t",
-            encoding="latin1",
+            encoding="latin1" if not replace_commas else None,
             names=[
                 "centimeter",
                 "track_section",

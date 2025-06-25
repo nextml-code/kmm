@@ -1,4 +1,5 @@
 import re
+from io import StringIO
 from pathlib import Path
 
 import numpy as np
@@ -46,7 +47,7 @@ expected_dtypes = dict(
 
 
 @validate_arguments
-def read_kmm2(path: Path, raise_on_malformed_data: bool = True):
+def read_kmm2(path: Path, raise_on_malformed_data: bool = True, replace_commas: bool=True):
     skiprows = [
         index
         for index, line in enumerate(path.read_text(encoding="latin1").splitlines())
@@ -58,13 +59,22 @@ def read_kmm2(path: Path, raise_on_malformed_data: bool = True):
             skiprows = [0] + skiprows
         elif raise_on_malformed_data and not line.startswith("POS"):
             raise ValueError("Malformed data, first line is not POS or VER")
+    
     try:
+        if replace_commas:
+            with open(path, "r", encoding="latin1") as f:
+                content = f.read()
+            content = content.replace(",", ".")
+            file_obj = StringIO(content)
+        else:
+            file_obj = path
+            
         try:
             df = pd.read_csv(
-                path,
+                file_obj,
                 skiprows=skiprows,
                 delimiter="\t",
-                encoding="latin1",
+                encoding="latin1" if not replace_commas else None,
                 low_memory=False,
                 header=None,
             )
