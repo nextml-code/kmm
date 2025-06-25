@@ -47,7 +47,9 @@ expected_dtypes = dict(
 
 
 @validate_arguments
-def read_kmm2(path: Path, raise_on_malformed_data: bool = True, replace_commas: bool=True):
+def read_kmm2(
+    path: Path, raise_on_malformed_data: bool = True, replace_commas: bool = True
+):
     skiprows = [
         index
         for index, line in enumerate(path.read_text(encoding="latin1").splitlines())
@@ -59,7 +61,7 @@ def read_kmm2(path: Path, raise_on_malformed_data: bool = True, replace_commas: 
             skiprows = [0] + skiprows
         elif raise_on_malformed_data and not line.startswith("POS"):
             raise ValueError("Malformed data, first line is not POS or VER")
-    
+
     try:
         if replace_commas:
             with open(path, "r", encoding="latin1") as f:
@@ -68,7 +70,7 @@ def read_kmm2(path: Path, raise_on_malformed_data: bool = True, replace_commas: 
             file_obj = StringIO(content)
         else:
             file_obj = path
-            
+
         try:
             df = pd.read_csv(
                 file_obj,

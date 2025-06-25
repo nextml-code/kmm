@@ -5,11 +5,7 @@ from xml.etree import ElementTree
 def position_sync(tree: ElementTree):
 
     root = tree.getroot()
-    sync_tags = [
-        child.text
-        for child in root
-        if child.tag == "Sync"
-    ]
+    sync_tags = [child.text for child in root if child.tag == "Sync"]
 
     if len(sync_tags) == 0:
         raise ValueError("Did not find a Sync tag in header.")
