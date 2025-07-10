@@ -1,7 +1,7 @@
 from pathlib import Path
 from xml.etree import ElementTree
 
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 import kmm
 
@@ -12,7 +12,7 @@ class Header(kmm.FunctionalBase):
     sync: int
 
     @staticmethod
-    @validate_arguments
+    @validate_call
     def from_path(path: Path, raise_on_malformed_data: bool = True):
         """
         Loads header data from .hdr file.
