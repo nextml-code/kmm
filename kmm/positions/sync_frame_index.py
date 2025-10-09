@@ -1,12 +1,12 @@
 import numpy as np
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 from kmm import CarDirection, PositionAdjustment
 from kmm.header.header import Header
 from kmm.positions.positions import Positions
 
 
-@validate_arguments(config=dict(arbitrary_types_allowed=True))
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def sync_frame_index(
     positions: Positions,
     header: Header,

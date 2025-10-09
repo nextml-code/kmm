@@ -3,10 +3,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 
-@validate_arguments
+@validate_call
 def read_kmm(path: Path, replace_commas: bool = True):
     try:
         if replace_commas:
