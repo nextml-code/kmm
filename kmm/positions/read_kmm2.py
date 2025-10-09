@@ -72,39 +72,39 @@ def read_kmm2(
             file_obj = path
 
         try:
-            df = pd.read_csv(
-                file_obj,
-                skiprows=skiprows,
-                delimiter="\t",
+            parser_kwargs = dict(
+                sep="\t",
                 encoding="latin1" if not replace_commas else None,
-                low_memory=False,
                 header=None,
+                skiprows=skiprows,
+                low_memory=False,
+            )
+            n_columns = len(pd.read_csv(file_obj, **parser_kwargs).columns)
+            
+            # Reset file pointer to beginning for StringIO objects
+            if hasattr(file_obj, 'seek'):
+                file_obj.seek(0)
+
+            if n_columns > len(expected_columns):
+                columns = [f"{i+1}?" for i in range(len(expected_columns), n_columns)]
+            elif n_columns < len(expected_columns):
+                columns = expected_columns[:n_columns]
+            else:
+                columns = expected_columns
+
+            return pd.read_csv(
+                file_obj,
+                **parser_kwargs,
+                names=columns,
+                dtype=expected_dtypes,
             )
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=expected_columns)
-        else:
-            return with_column_names(df)
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         raise ValueError("Unable to parse kmm2 file, invalid csv.") from e
-
-
-def with_column_names(df):
-    length_diff = len(df.columns) - len(expected_columns)
-    if length_diff > 0:
-        columns = expected_columns + [f"{i}?" for i in range(8, 8 + length_diff)]
-    elif length_diff < 0:
-        columns = expected_columns[:length_diff]
-    else:
-        columns = expected_columns
-    df.columns = columns
-    df.astype(
-        {
-            column: dtype
-            for column, dtype in expected_dtypes.items()
-            if column in df.columns
-        }
-    )
-    return df
 
 
 def test_patterns():
