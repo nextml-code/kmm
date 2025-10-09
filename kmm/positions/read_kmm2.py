@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
@@ -46,7 +46,7 @@ expected_dtypes = dict(
 )
 
 
-@validate_arguments
+@validate_call
 def read_kmm2(
     path: Path, raise_on_malformed_data: bool = True, replace_commas: bool = True
 ):
@@ -80,9 +80,9 @@ def read_kmm2(
                 low_memory=False,
             )
             n_columns = len(pd.read_csv(file_obj, **parser_kwargs).columns)
-            
+
             # Reset file pointer to beginning for StringIO objects
-            if hasattr(file_obj, 'seek'):
+            if hasattr(file_obj, "seek"):
                 file_obj.seek(0)
 
             if n_columns > len(expected_columns):

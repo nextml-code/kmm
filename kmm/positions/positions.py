@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from pydantic import validate_arguments
+from pydantic import ConfigDict, validate_call
 
 import kmm
 from kmm.header.header import Header
@@ -10,11 +10,10 @@ from kmm.header.header import Header
 class Positions(kmm.FunctionalBase):
     dataframe: pd.DataFrame
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @staticmethod
-    @validate_arguments
+    @validate_call
     def from_path(
         path: Path,
         raise_on_malformed_data: bool = True,
@@ -37,7 +36,7 @@ class Positions(kmm.FunctionalBase):
         return Positions(dataframe=dataframe)
 
     @staticmethod
-    @validate_arguments
+    @validate_call
     def read_sync_adjust(
         kmm_path: Path,
         header_path: Path,
@@ -60,7 +59,7 @@ class Positions(kmm.FunctionalBase):
             .geodetic()
         )
 
-    @validate_arguments
+    @validate_call
     def sync_frame_index(
         self,
         header: Header,
