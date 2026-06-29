@@ -25,11 +25,14 @@ author = "Richard Löwenström, Felix Abrahamsson"
 
 # The full version, including alpha/beta/rc tags
 # release = '0.1.0'
-from pkg_resources import get_distribution, DistributionNotFound
+# NB: alias the import — a bare `version` in this module's namespace would be
+# picked up by Sphinx as the `version` config value (a function), crashing the
+# inventory dump.
+from importlib.metadata import version as _get_version, PackageNotFoundError
 
 try:
-    release = get_distribution("kmm").version
-except DistributionNotFound:
+    release = _get_version("kmm")
+except PackageNotFoundError:
     pass
 
 
@@ -41,7 +44,6 @@ except DistributionNotFound:
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "recommonmark",
     "sphinx.ext.viewcode",
     "sphinx_rtd_theme",
 ]
