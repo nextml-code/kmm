@@ -1,6 +1,10 @@
-# Install the package itself so autodoc can import kmm and its dependencies
-# (numpy, pandas, pydantic, sweref99) resolve to current wheels on the docs Python.
-.
+# Doc build deps. The package's own runtime deps are listed explicitly (rather
+# than installing the package via ".") so autodoc can import kmm while keeping
+# this a plain PyPI requirements file the Dependabot pip graph can resolve.
+numpy
+pandas
+pydantic
+sweref99
 
 sphinx>=7,<9
 sphinx-rtd-theme>=2
