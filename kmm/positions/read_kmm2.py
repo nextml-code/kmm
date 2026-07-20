@@ -5,9 +5,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from pydantic import validate_call
+from sweref99 import projections
 
 pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
+
+# Norway ("Banenor") kmm2 files are identified by this token in the VER header
+# line. They store WGS84 latitude/longitude in the coordinate columns instead of
+# SWEREF99 TM northing/easting.
+norway_header_token = "NorKmmToKmm"
+tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
 expected_columns = [
     "code",
@@ -46,6 +53,29 @@ expected_dtypes = dict(
 )
 
 
+def latlon_to_sweref(dataframe):
+    """
+    Norway kmm2 files store WGS84 latitude/longitude in the coordinate columns
+    (parsed here into the ``northing``/``easting`` columns of the shared layout).
+    Convert them to SWEREF99 TM northing/easting so the rest of the pipeline,
+    including the geodetic transform, behaves identically to Swedish files.
+    """
+    if len(dataframe) == 0 or not {"northing", "easting"}.issubset(dataframe.columns):
+        return dataframe
+
+    latitude = dataframe["northing"].to_numpy()
+    longitude = dataframe["easting"].to_numpy()
+    grid = [
+        (np.nan, np.nan)
+        if np.isnan(lat) or np.isnan(lon)
+        else tm.geodetic_to_grid(float(lat), float(lon))
+        for lat, lon in zip(latitude, longitude)
+    ]
+    dataframe["northing"] = np.array([n for n, _ in grid], dtype=np.float32)
+    dataframe["easting"] = np.array([e for _, e in grid], dtype=np.float32)
+    return dataframe
+
+
 @validate_call
 def read_kmm2(
     path: Path, raise_on_malformed_data: bool = True, replace_commas: bool = True
@@ -55,10 +85,12 @@ def read_kmm2(
         for index, line in enumerate(path.read_text(encoding="latin1").splitlines())
         if pattern.match(line) or pattern2.match(line)
     ]
+    norway = False
     with open(path, "r", encoding="latin1") as f:
         line = f.readline()
         if line.startswith("VER"):
             skiprows = [0] + skiprows
+            norway = norway_header_token in line
         elif raise_on_malformed_data and not line.startswith("POS"):
             raise ValueError("Malformed data, first line is not POS or VER")
 
@@ -92,12 +124,15 @@ def read_kmm2(
             else:
                 columns = expected_columns
 
-            return pd.read_csv(
+            dataframe = pd.read_csv(
                 file_obj,
                 **parser_kwargs,
                 names=columns,
                 dtype=expected_dtypes,
             )
+            if norway:
+                dataframe = latlon_to_sweref(dataframe)
+            return dataframe
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=expected_columns)
     except Exception as e:
@@ -114,3 +149,20 @@ def test_patterns():
 
 def test_extra_columns():
     read_kmm2(Path("tests/extra_columns.kmm2"))
+
+
+def test_norway_latlon_to_sweref():
+    # Norway ("Banenor") files store WGS84 lat/lon in the coordinate columns;
+    # read_kmm2 must convert them to SWEREF99 TM northing/easting so the rest of
+    # the pipeline (including .geodetic()) recovers the original coordinates.
+    dataframe = read_kmm2(Path("tests/norway.kmm2"))
+    assert len(dataframe) == 4
+    # SWEREF99 TM: northing in the millions, easting in the hundred-thousands.
+    assert (dataframe["northing"] > 6_000_000).all()
+    assert (dataframe["easting"] > 100_000).all()
+
+    latitude, longitude = tm.grid_to_geodetic(
+        dataframe["northing"].iloc[0], dataframe["easting"].iloc[0]
+    )
+    assert abs(latitude - 59.9100025) < 1e-4
+    assert abs(longitude - 10.7545870) < 1e-4
