@@ -11,8 +11,9 @@ pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
 
 # Norway ("Banenor") kmm2 files are identified by this token in the VER header
-# line. They store WGS84 latitude/longitude in the coordinate columns instead of
-# SWEREF99 TM northing/easting.
+# line. Older ones store WGS84 latitude/longitude in the coordinate columns
+# instead of SWEREF99 TM northing/easting; newer ones, under the same header,
+# store projected northing/easting already.
 norway_header_token = "NorKmmToKmm"
 tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
@@ -53,6 +54,20 @@ expected_dtypes = dict(
 )
 
 
+def is_degrees(dataframe):
+    """
+    The same converter version (``NorKmmToKmm2_1.03``) writes either WGS84
+    degrees or projected metres into the coordinate columns, so the header
+    cannot tell them apart; the values can. A latitude is at most 90, while a
+    northing anywhere in Scandinavia is in the millions. The projected files
+    use zone 33 ETRS89 coordinates, which SWEREF99 TM shares its projection
+    with, so they pass through unchanged.
+    """
+    northing = dataframe["northing"].abs()
+    easting = dataframe["easting"].abs()
+    return bool(northing.median() <= 90 and easting.median() <= 180)
+
+
 def latlon_to_sweref(dataframe):
     """
     Norway kmm2 files store WGS84 latitude/longitude in the coordinate columns
@@ -61,6 +76,8 @@ def latlon_to_sweref(dataframe):
     including the geodetic transform, behaves identically to Swedish files.
     """
     if len(dataframe) == 0 or not {"northing", "easting"}.issubset(dataframe.columns):
+        return dataframe
+    if not is_degrees(dataframe):
         return dataframe
 
     latitude = dataframe["northing"].to_numpy()
@@ -163,6 +180,23 @@ def test_norway_latlon_to_sweref():
 
     latitude, longitude = tm.grid_to_geodetic(
         dataframe["northing"].iloc[0], dataframe["easting"].iloc[0]
+    )
+    assert abs(latitude - 59.9100025) < 1e-4
+    assert abs(longitude - 10.7545870) < 1e-4
+
+
+def test_norway_projected_coordinates_pass_through():
+    # Newer Norway files carry the same VER header but already store projected
+    # northing/easting. Converting those as degrees produced garbage; they must
+    # land on the same place as the lat/lon fixture (same four positions).
+    projected = read_kmm2(Path("tests/norway_projected.kmm2"))
+    degrees = read_kmm2(Path("tests/norway.kmm2"))
+    assert len(projected) == 4
+    assert np.allclose(projected["northing"], degrees["northing"], atol=1.0)
+    assert np.allclose(projected["easting"], degrees["easting"], atol=1.0)
+
+    latitude, longitude = tm.grid_to_geodetic(
+        projected["northing"].iloc[0], projected["easting"].iloc[0]
     )
     assert abs(latitude - 59.9100025) < 1e-4
     assert abs(longitude - 10.7545870) < 1e-4
