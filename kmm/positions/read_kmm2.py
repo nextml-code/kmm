@@ -1,4 +1,5 @@
 import re
+import warnings
 from io import StringIO
 from pathlib import Path
 
@@ -11,8 +12,9 @@ pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
 
 # Norway ("Banenor") kmm2 files are identified by this token in the VER header
-# line. They store WGS84 latitude/longitude in the coordinate columns instead of
-# SWEREF99 TM northing/easting.
+# line. Most store WGS84 latitude/longitude in the coordinate columns instead of
+# SWEREF99 TM northing/easting; newer ones, under the same header, store
+# projected metres (see is_degrees).
 norway_header_token = "NorKmmToKmm"
 tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
@@ -53,14 +55,64 @@ expected_dtypes = dict(
 )
 
 
+# A share of rows above this that reads the other way than the file's
+# medians makes the file mixed: it is converted by the majority, as before,
+# with a warning, since some of its rows will be wrong either way.
+mixed_share_warning = 0.01
+
+
+def _fixed_coordinates(dataframe):
+    """The coordinate pairs of rows with a fix: neither NaN nor 0,0 (no fix
+    yet, in degrees and in metres alike)."""
+    northing = dataframe["northing"].abs()
+    easting = dataframe["easting"].abs()
+    fixed = northing.notna() & easting.notna() & ((northing != 0) | (easting != 0))
+    return northing[fixed], easting[fixed]
+
+
+def is_degrees(dataframe):
+    """
+    Whether a Norway file's coordinate columns hold WGS84 degrees.
+
+    The same converter version (``NorKmmToKmm2_1.03``) writes either degrees or
+    projected metres, so the header cannot tell them apart; the values can. A
+    latitude is at most 90 and a longitude at most 180, while a northing
+    anywhere in Scandinavia is in the millions and an easting in the hundred
+    thousands. The medians over rows with a fix decide, so neither a few
+    malformed rows nor a stretch without a fix (0,0) can flip a file. The
+    projected files are UTM zone 33N (ETRS89), whose projection parameters
+    SWEREF99 TM shares, so they pass through unchanged.
+
+    Warns when more than ``mixed_share_warning`` of the rows read the other
+    way: such a file mixes degrees and metres.
+    """
+    northing, easting = _fixed_coordinates(dataframe)
+    if len(northing) == 0:
+        return True
+    degrees = bool(northing.median() <= 90 and easting.median() <= 180)
+    row_degrees = (northing <= 90) & (easting <= 180)
+    disagreeing = int((row_degrees != degrees).sum())
+    if disagreeing > mixed_share_warning * len(northing):
+        warnings.warn(
+            f"Norway kmm2 file mixes degrees and projected coordinates: {disagreeing} of "
+            f"{len(northing)} rows read as {'metres' if degrees else 'degrees'}, converted "
+            f"as {'degrees' if degrees else 'metres'}",
+            stacklevel=2,
+        )
+    return degrees
+
+
 def latlon_to_sweref(dataframe):
     """
     Norway kmm2 files store WGS84 latitude/longitude in the coordinate columns
     (parsed here into the ``northing``/``easting`` columns of the shared layout).
     Convert them to SWEREF99 TM northing/easting so the rest of the pipeline,
     including the geodetic transform, behaves identically to Swedish files.
+    A file that already holds projected metres is returned as it is.
     """
     if len(dataframe) == 0 or not {"northing", "easting"}.issubset(dataframe.columns):
+        return dataframe
+    if not is_degrees(dataframe):
         return dataframe
 
     latitude = dataframe["northing"].to_numpy()
@@ -166,3 +218,81 @@ def test_norway_latlon_to_sweref():
     )
     assert abs(latitude - 59.9100025) < 1e-4
     assert abs(longitude - 10.7545870) < 1e-4
+
+
+# northing, easting as 0.1.10 read tests/norway.kmm2 (converting
+# unconditionally). A degrees file must still read exactly this way.
+NORWAY_0_1_10 = [
+    [6649001.5, 262665.96875],
+    [6649001.0, 262666.78125],
+    [6649000.5, 262667.625],
+    [6649000.5, 262668.5],
+]
+
+
+def test_norway_degrees_unchanged_from_0_1_10():
+    dataframe = read_kmm2(Path("tests/norway.kmm2"))
+    expected = np.array(NORWAY_0_1_10, dtype=np.float32)
+    actual = dataframe[["northing", "easting"]].to_numpy()
+    assert actual.dtype == np.float32
+    assert np.array_equal(actual, expected)
+
+
+def test_norway_projected_coordinates_pass_through():
+    # Trimmed from a 2026 Bane NOR file: projected metres under the same
+    # NorKmmToKmm2_1.03 header. 0.1.10 converted these as degrees.
+    dataframe = read_kmm2(Path("tests/norway_projected.kmm2"))
+    assert len(dataframe) == 5
+    assert abs(dataframe["northing"].iloc[0] - 6632290.739231621) < 1
+    assert abs(dataframe["easting"].iloc[0] - 230493.47419632197) < 1
+
+    latitude, longitude = tm.grid_to_geodetic(
+        dataframe["northing"].iloc[0], dataframe["easting"].iloc[0]
+    )
+    # Bane NOR section 1420, west of Oslo.
+    assert 59.5 < latitude < 60.2
+    assert 10.0 < longitude < 11.0
+
+
+def test_norway_degrees_2025_unchanged_from_0_1_10():
+    # Every 600th row of a 2025 Bane NOR file in degrees, and the northing
+    # and easting 0.1.10 read from it (written with kmm 0.1.10 from PyPI).
+    dataframe = read_kmm2(Path("tests/norway_degrees_2025.kmm2"))
+    expected = pd.read_csv("tests/norway_degrees_2025.expected-0.1.10.csv")
+    assert np.array_equal(
+        dataframe[["northing", "easting"]].to_numpy(),
+        expected[["northing", "easting"]].to_numpy(dtype=np.float32),
+    )
+
+
+def test_norway_projected_with_rows_without_fix_stays_projected():
+    # 3 of 5 rows at 0,0 (no fix yet) must not flip a projected file to degrees.
+    projected = pd.DataFrame(
+        {
+            "northing": [0.0, 0.0, 0.0, 6632290.7, 6632291.2],
+            "easting": [0.0, 0.0, 0.0, 230493.5, 230494.4],
+        }
+    )
+    assert not is_degrees(projected)
+
+
+def test_norway_mixed_file_warns():
+    mixed = pd.DataFrame(
+        {
+            "northing": [59.91] * 90 + [6632290.7] * 10,
+            "easting": [10.63] * 90 + [230493.5] * 10,
+        }
+    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert is_degrees(mixed)
+    assert any(
+        "mixes degrees and projected" in str(warning.message) for warning in caught
+    )
+
+
+def test_norway_clean_file_does_not_warn():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        read_kmm2(Path("tests/norway.kmm2"))
+        read_kmm2(Path("tests/norway_projected.kmm2"))
