@@ -1,4 +1,5 @@
 import re
+import warnings
 from io import StringIO
 from pathlib import Path
 
@@ -54,6 +55,21 @@ expected_dtypes = dict(
 )
 
 
+# A share of rows above this that reads the other way than the file's
+# medians makes the file mixed: it is converted by the majority, as before,
+# with a warning, since some of its rows will be wrong either way.
+mixed_share_warning = 0.01
+
+
+def _fixed_coordinates(dataframe):
+    """The coordinate pairs of rows with a fix: neither NaN nor 0,0 (no fix
+    yet, in degrees and in metres alike)."""
+    northing = dataframe["northing"].abs()
+    easting = dataframe["easting"].abs()
+    fixed = northing.notna() & easting.notna() & ((northing != 0) | (easting != 0))
+    return northing[fixed], easting[fixed]
+
+
 def is_degrees(dataframe):
     """
     Whether a Norway file's coordinate columns hold WGS84 degrees.
@@ -62,13 +78,28 @@ def is_degrees(dataframe):
     projected metres, so the header cannot tell them apart; the values can. A
     latitude is at most 90 and a longitude at most 180, while a northing
     anywhere in Scandinavia is in the millions and an easting in the hundred
-    thousands. The medians decide, so a few malformed rows cannot flip a file.
-    The projected files are UTM zone 33N (ETRS89), whose projection parameters
+    thousands. The medians over rows with a fix decide, so neither a few
+    malformed rows nor a stretch without a fix (0,0) can flip a file. The
+    projected files are UTM zone 33N (ETRS89), whose projection parameters
     SWEREF99 TM shares, so they pass through unchanged.
+
+    Warns when more than ``mixed_share_warning`` of the rows read the other
+    way: such a file mixes degrees and metres.
     """
-    northing = dataframe["northing"].abs().median()
-    easting = dataframe["easting"].abs().median()
-    return bool(northing <= 90 and easting <= 180)
+    northing, easting = _fixed_coordinates(dataframe)
+    if len(northing) == 0:
+        return True
+    degrees = bool(northing.median() <= 90 and easting.median() <= 180)
+    row_degrees = (northing <= 90) & (easting <= 180)
+    disagreeing = int((row_degrees != degrees).sum())
+    if disagreeing > mixed_share_warning * len(northing):
+        warnings.warn(
+            f"Norway kmm2 file mixes degrees and projected coordinates: {disagreeing} of "
+            f"{len(northing)} rows read as {'metres' if degrees else 'degrees'}, converted "
+            f"as {'degrees' if degrees else 'metres'}",
+            stacklevel=2,
+        )
+    return degrees
 
 
 def latlon_to_sweref(dataframe):
@@ -221,3 +252,47 @@ def test_norway_projected_coordinates_pass_through():
     # Bane NOR section 1420, west of Oslo.
     assert 59.5 < latitude < 60.2
     assert 10.0 < longitude < 11.0
+
+
+def test_norway_degrees_2025_unchanged_from_0_1_10():
+    # Every 600th row of a 2025 Bane NOR file in degrees, and the northing
+    # and easting 0.1.10 read from it (written with kmm 0.1.10 from PyPI).
+    dataframe = read_kmm2(Path("tests/norway_degrees_2025.kmm2"))
+    expected = pd.read_csv("tests/norway_degrees_2025.expected-0.1.10.csv")
+    assert np.array_equal(
+        dataframe[["northing", "easting"]].to_numpy(),
+        expected[["northing", "easting"]].to_numpy(dtype=np.float32),
+    )
+
+
+def test_norway_projected_with_rows_without_fix_stays_projected():
+    # 3 of 5 rows at 0,0 (no fix yet) must not flip a projected file to degrees.
+    projected = pd.DataFrame(
+        {
+            "northing": [0.0, 0.0, 0.0, 6632290.7, 6632291.2],
+            "easting": [0.0, 0.0, 0.0, 230493.5, 230494.4],
+        }
+    )
+    assert not is_degrees(projected)
+
+
+def test_norway_mixed_file_warns():
+    mixed = pd.DataFrame(
+        {
+            "northing": [59.91] * 90 + [6632290.7] * 10,
+            "easting": [10.63] * 90 + [230493.5] * 10,
+        }
+    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert is_degrees(mixed)
+    assert any(
+        "mixes degrees and projected" in str(warning.message) for warning in caught
+    )
+
+
+def test_norway_clean_file_does_not_warn():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        read_kmm2(Path("tests/norway.kmm2"))
+        read_kmm2(Path("tests/norway_projected.kmm2"))
