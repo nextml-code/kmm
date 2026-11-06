@@ -11,8 +11,9 @@ pattern = re.compile(r".+\[.+\]")
 pattern2 = re.compile(r"CMAST")
 
 # Norway ("Banenor") kmm2 files are identified by this token in the VER header
-# line. They store WGS84 latitude/longitude in the coordinate columns instead of
-# SWEREF99 TM northing/easting.
+# line. Most store WGS84 latitude/longitude in the coordinate columns instead of
+# SWEREF99 TM northing/easting; newer ones, under the same header, store
+# projected metres (see is_degrees).
 norway_header_token = "NorKmmToKmm"
 tm = projections.make_transverse_mercator("SWEREF_99_TM")
 
@@ -53,14 +54,34 @@ expected_dtypes = dict(
 )
 
 
+def is_degrees(dataframe):
+    """
+    Whether a Norway file's coordinate columns hold WGS84 degrees.
+
+    The same converter version (``NorKmmToKmm2_1.03``) writes either degrees or
+    projected metres, so the header cannot tell them apart; the values can. A
+    latitude is at most 90 and a longitude at most 180, while a northing
+    anywhere in Scandinavia is in the millions and an easting in the hundred
+    thousands. The medians decide, so a few malformed rows cannot flip a file.
+    The projected files are UTM zone 33N (ETRS89), whose projection parameters
+    SWEREF99 TM shares, so they pass through unchanged.
+    """
+    northing = dataframe["northing"].abs().median()
+    easting = dataframe["easting"].abs().median()
+    return bool(northing <= 90 and easting <= 180)
+
+
 def latlon_to_sweref(dataframe):
     """
     Norway kmm2 files store WGS84 latitude/longitude in the coordinate columns
     (parsed here into the ``northing``/``easting`` columns of the shared layout).
     Convert them to SWEREF99 TM northing/easting so the rest of the pipeline,
     including the geodetic transform, behaves identically to Swedish files.
+    A file that already holds projected metres is returned as it is.
     """
     if len(dataframe) == 0 or not {"northing", "easting"}.issubset(dataframe.columns):
+        return dataframe
+    if not is_degrees(dataframe):
         return dataframe
 
     latitude = dataframe["northing"].to_numpy()
@@ -166,3 +187,37 @@ def test_norway_latlon_to_sweref():
     )
     assert abs(latitude - 59.9100025) < 1e-4
     assert abs(longitude - 10.7545870) < 1e-4
+
+
+# northing, easting as 0.1.10 read tests/norway.kmm2 (converting
+# unconditionally). A degrees file must still read exactly this way.
+NORWAY_0_1_10 = [
+    [6649001.5, 262665.96875],
+    [6649001.0, 262666.78125],
+    [6649000.5, 262667.625],
+    [6649000.5, 262668.5],
+]
+
+
+def test_norway_degrees_unchanged_from_0_1_10():
+    dataframe = read_kmm2(Path("tests/norway.kmm2"))
+    expected = np.array(NORWAY_0_1_10, dtype=np.float32)
+    actual = dataframe[["northing", "easting"]].to_numpy()
+    assert actual.dtype == np.float32
+    assert np.array_equal(actual, expected)
+
+
+def test_norway_projected_coordinates_pass_through():
+    # Trimmed from a 2026 Bane NOR file: projected metres under the same
+    # NorKmmToKmm2_1.03 header. 0.1.10 converted these as degrees.
+    dataframe = read_kmm2(Path("tests/norway_projected.kmm2"))
+    assert len(dataframe) == 5
+    assert abs(dataframe["northing"].iloc[0] - 6632290.739231621) < 1
+    assert abs(dataframe["easting"].iloc[0] - 230493.47419632197) < 1
+
+    latitude, longitude = tm.grid_to_geodetic(
+        dataframe["northing"].iloc[0], dataframe["easting"].iloc[0]
+    )
+    # Bane NOR section 1420, west of Oslo.
+    assert 59.5 < latitude < 60.2
+    assert 10.0 < longitude < 11.0
